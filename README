@@ -1,4 +1,4 @@
-Oric 1/ATMOS emulator for LiliGO TTGO VGA32 V1.4 board
+Oric 1/ATMOS emulator for LilyGO TTGO VGA32 V1.4 board
 
 keyboard (US keymap from a ps/2 keyboard) , display are ok.
 sound data is computed, but not used ...
