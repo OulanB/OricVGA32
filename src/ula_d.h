@@ -9,6 +9,9 @@ typedef struct {
     BYTE flash;
 } ULA;
 
-void ula_init();
-void ula_display2(BYTE tick);
+void ulaInit();
+void ulaDisplay2(BYTE tick);
+void osdDisplay2(BYTE tick);
+void osdTopDisplay2(BOOL erase);
+void osdBottomDisplay2(BOOL erase);
 #endif

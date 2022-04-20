@@ -23,7 +23,8 @@ typedef struct M6502 {
     BYTE Z;
     BYTE I;
     BYTE D;
-    BYTE B;
+//    BYTE B;
+//    BYTE B05;
     BYTE V;
     BYTE N;
 
@@ -36,8 +37,8 @@ typedef struct M6502 {
     BYTE desassOne;
 } M6502;
 
-void m6502_doOps(SDWORD cycles); // from JS
-void m6502_reset();
-void m6502_desass(BYTE val);
+int m6502DoOps(SDWORD cycles); // from JS
+void m6502Reset();
+void m6502Desass(BYTE val);
 
 #endif

@@ -73,15 +73,15 @@ typedef struct {
     BYTE shiftF;
     BYTE keyDowns;
     BYTE codeRaw;
-    BYTE lastPressed[512];
-
 } IO;
 
-void pressKeyMtx(BYTE line, BYTE bcol);
-void releaseKeyMtx(BYTE line, BYTE bcol);
+void ioPressKeyMtx(BYTE line, BYTE bcol);
+void ioReleaseKeyMtx(BYTE line, BYTE bcol);
 
-BYTE io_read(BYTE addr);
-void io_write(BYTE addr, BYTE data);
-void io_timer(WORD cycles);
+void ioReset();
+
+BYTE ioRead(BYTE addr);
+void ioWrite(BYTE addr, BYTE data);
+void ioDoTimer(WORD cycles);
 
 #endif

@@ -8,45 +8,68 @@
 #undef THIS
 #define THIS System.Io
 
-void pressKeyMtx(BYTE line, BYTE bcol) {
-//    log_d("Press %02X at %d", bcol, line);
-    THIS.kM[line] |= bcol;
-}
-void releaseKeyMtx(BYTE line, BYTE bcol) {
-//    log_d("Release %02X at %d", bcol, line);
-    THIS.kM[line] &= ~bcol;
+void ioReset() {
+    memset(&THIS, 0, sizeof(IO));
 }
 
-void changeKeyMod() {   // not used 
+void ioPressKeyMtx(BYTE line, BYTE bcol) {
+//    log_d("Press %02X at %d", bcol, line);
+    if (line < 8) {
+        THIS.kM[line] |= bcol;
+    } else {    // overlay subsystem
+        if (line == 8) {
+            if (bcol == 12) {           // F12 key
+                System.Osd.display = 1 - System.Osd.display;
+                System.Osd.topDisplay = 1;
+            } else if (bcol == 11) {    // F11 key
+                System.Osd.topDisplay = 1 - System.Osd.topDisplay;
+                if (!System.Osd.topDisplay) {
+                    osdTopDisplay2(1);
+                    osdBottomDisplay2(1);
+                }
+            }
+        }
+    }
+}
+void ioReleaseKeyMtx(BYTE line, BYTE bcol) {
+//    log_d("Release %02X at %d", bcol, line);
+    if (line < 8) {
+        THIS.kM[line] &= ~bcol;
+    } else {
+
+    }
+}
+
+void ioChangeKeyMod() {   // not used 
     if (THIS.keyDowns != 0) return;
     System.ram[0x209] = 0x38;
     if (THIS.shiftl != 0) {
-        pressKeyMtx(4, 0x10);                                  // then shiftL
+        ioPressKeyMtx(4, 0x10);                                  // then shiftL
         System.ram[0x209] = 0xA4;
     } else {
-        releaseKeyMtx(4, 0x10);                                  // then shiftL
+        ioReleaseKeyMtx(4, 0x10);                                  // then shiftL
     }
     if (THIS.shiftr != 0) {
-        pressKeyMtx(7, 0x10);                                  // then shiftR
+        ioPressKeyMtx(7, 0x10);                                  // then shiftR
         System.ram[0x209] = 0xA7;
     } else {
-        releaseKeyMtx(7, 0x10);                                  // then shiftR
+        ioReleaseKeyMtx(7, 0x10);                                  // then shiftR
     }
     if (THIS.ctrll != 0) {
-        pressKeyMtx(2, 0x10);                                  // then ctrl
+        ioPressKeyMtx(2, 0x10);                                  // then ctrl
         System.ram[0x209] = 0xA2;
     } else {
-        releaseKeyMtx(2, 0x10);                                  // then ctrl
+        ioReleaseKeyMtx(2, 0x10);                                  // then ctrl
     }
     if (THIS.alt != 0) {
-        pressKeyMtx(5, 0x10);                                  // then funct is alt
+        ioPressKeyMtx(5, 0x10);                                  // then funct is alt
         System.ram[0x209] = 0xA5;
     } else {
-        releaseKeyMtx(5, 0x10);                                  // then funct
+        ioReleaseKeyMtx(5, 0x10);                                  // then funct
     }
 }
 
-static void _doIrqVia() {
+inline void _ioDoIrqVia() {
     THIS.irqVia = (THIS.IER & THIS.IFR & 0x7F) ? 1 : 0;
     System.Cpu.IRQ = THIS.irqVia | THIS.irqFdc;
 //        if (THIS.cpu.IRQ) {
@@ -57,13 +80,13 @@ static void _doIrqVia() {
 //        }
 }
 
-void io_timer(WORD cycles) {
+void ioDoTimer(WORD cycles) {
     if (THIS.timer1L > 0) {
         if (cycles >= THIS.timer1C) {   // elapsed
             THIS.timer1C += THIS.timer1L - cycles;
             if (THIS.timer1R != 0) {
                 THIS.IFR |= 0x40;
-                _doIrqVia();
+                _ioDoIrqVia();
             }
             THIS.timer1R = THIS.timer1M & 1;	// one shoot or continuous
         }
@@ -74,7 +97,7 @@ void io_timer(WORD cycles) {
             THIS.timer2C += THIS.timer2L - cycles;
             if (THIS.timer2R != 0) {
                 THIS.IFR |= 0x20;
-                _doIrqVia();
+                _ioDoIrqVia();
             }
             THIS.timer2R = 0;				// one shoot always
         }
@@ -82,12 +105,12 @@ void io_timer(WORD cycles) {
     }
 }
 
-static void _psgBus() {
+static void _ioPsgBus() {
     if (THIS.bdir) {
         if (THIS.bc1) {
             System.Psg.reg = THIS.ORA & THIS.DDRA & 0x0F;
         } else {
-            if (ym2149_write(THIS.ORA & THIS.DDRA)) {
+            if (ym2149Write(THIS.ORA & THIS.DDRA)) {
                 THIS.kCol = (~(THIS.ORA & THIS.DDRA)) & 0xFF;
             }
         }
@@ -96,7 +119,7 @@ static void _psgBus() {
     }
 }
 
-BYTE io_read(BYTE addr) {
+BYTE ioRead(BYTE addr) {
     BYTE i = 0;
     switch(addr) {
         case 0x00:      // input register B
@@ -107,8 +130,8 @@ BYTE io_read(BYTE addr) {
             }
             if (THIS.tapeOp) {
                 if ((THIS.tapeRead == 0) && (THIS.tapeWrite == 0)) {			// first acces -> read op
-                    //// System.Tape.startOperationRd();
-                    //console.log('IO read op');
+                    tapeStartOperationRd();
+                    Serial.println("IO read op");
                     THIS.tapeRead = 1;
                 }
             }
@@ -116,7 +139,7 @@ BYTE io_read(BYTE addr) {
             return (THIS.IRB & (~THIS.DDRB)) | (THIS.ORB & THIS.DDRB);
         case 0x01:		// input register A
             THIS.IFR &= ~0x03;						// reset CA2 CA1 interrupt flag
-            _psgBus();
+            _ioPsgBus();
             return (THIS.IRA & (~THIS.DDRA)) | (THIS.ORA & THIS.DDRA);
         case 0x02:		// data direction register B
             return THIS.DDRB;
@@ -124,11 +147,11 @@ BYTE io_read(BYTE addr) {
             return THIS.DDRA;
         case 0x04:		// Timer 1 counter low
             THIS.IFR &= ~0x40;						// reset T1 interrupt flag
-            _doIrqVia();
+            _ioDoIrqVia();
             if (THIS.tapeOp) {
                 if ((THIS.tapeRead == 0) && (THIS.tapeWrite == 0)) {			// first acces -> write op
-                    //// System.Tape.startOperationWr();
-                    //console.log('write op');
+                    tapeStartOperationWr();
+                    Serial.println("write op");
                     THIS.tapeWrite = 1;
                 }
                 return (BYTE)(THIS.T1C & 0x00FF);
@@ -143,7 +166,7 @@ BYTE io_read(BYTE addr) {
             return (BYTE)(THIS.timer1L >> 8);
         case 0x08:		// Timer 2 counter low
             THIS.IFR &= ~0x20;						// reset T2 interrupt flag
-            _doIrqVia();
+            _ioDoIrqVia();
             if (THIS.tapeOp) return (BYTE)(THIS.T2C & 0x00FF);
             return (BYTE)(THIS.timer2C & 0x00FF);
         case 0x09:		// Timer 2 counter high
@@ -151,7 +174,7 @@ BYTE io_read(BYTE addr) {
             return (BYTE)(THIS.timer2C >> 8);
         case 0x0A:		// shift register
             THIS.IFR &= ~0x04;	// reset SR interrupt flag
-            _doIrqVia();
+            _ioDoIrqVia();
             return THIS.SR;
         case 0x0B:		// auxilliary control register
             return THIS.ACR;
@@ -160,15 +183,15 @@ BYTE io_read(BYTE addr) {
         case 0x0D:		// interrupt flag register
             if (THIS.tapeOp) {
                 if (THIS.tapeRead) {	// LDA $30D at E720 ...
-                    //// i = System.Tape.getFromTape();
+                    i = tapeGetFromTape();
                     THIS.IFR |= 0x10;      // force CB1
-                    _doIrqVia();
-                    // console.log('IO bit is ' + i);
+                    _ioDoIrqVia();
+                    // Serial.printf("IO bit is %d\n", i);
                     THIS.T2C = (i == 1) ? 0xFE80 : 0xFD80;
                 } else if (THIS.tapeWrite) {	// force Timer 1 elapsed
-                    //Log.d(__D_TAG, "force IFR for write");
+                    // Serial.println("force IFR for write");
                     THIS.IFR |= 0x40;      // force T1 interrupt flag
-                    _doIrqVia();
+                    _ioDoIrqVia();
                 }
             }
             THIS.IFR &= 0x7F;
@@ -176,29 +199,29 @@ BYTE io_read(BYTE addr) {
         case 0x0E:		// interrupt enable register
             return THIS.IER | 0x80;
         case 0x0F:		// input register A (no ack)
-            _psgBus();
+            _ioPsgBus();
             return (THIS.IRA & (~THIS.DDRA)) | (THIS.ORA & THIS.DDRA);
 
     }
     return 0x00;
 }
 
-void io_write(BYTE addr, BYTE data) {
+void ioWrite(BYTE addr, BYTE data) {
     BYTE tmp = 0;
     switch (addr) {
         case 0x00:      // output register B
             THIS.IFR &= ~0x18;
-            _doIrqVia();
+            _ioDoIrqVia();
             THIS.ORB = data;
             tmp = (data & 0x40) ? 1 : 0;
             if ((THIS.relay == 0) && (tmp)) {						// start of tape operation
-                // console.log('IO relay on');
-                //// System.tape.initOp();
+                Serial.println("IO relay on");
                 THIS.tapeOp = 1;
+                tapeInitOp();
             }
             if ((THIS.relay) && (tmp == 0)) {						// end of tape operation
-                // console.log('IO relay off');
-                //// System.tape.endOperation(THIS.tapeRead, THIS.tapeWrite);
+                Serial.println("IO relay off");
+                tapeEndOperation(THIS.tapeRead, THIS.tapeWrite);
                 THIS.tapeOp = 0;
                 THIS.tapeRead = 0;
                 THIS.tapeWrite = 0;
@@ -214,21 +237,21 @@ void io_write(BYTE addr, BYTE data) {
                 //					Log.d(__D_TAG, "RE strobe");
                 //Util.Print(getORA());
                 THIS.IFR |= 0x02;		// ca1 set
-                _doIrqVia();
+                _ioDoIrqVia();
             }
             THIS.strobe = tmp;
             return;
         case 0x01:		// output register A
             THIS.IFR &= ~0x03;			// reset CA2 CA1 interrupt flag
             THIS.ORA = data;
-            _psgBus();
+            _ioPsgBus();
             return;
         case 0x02:		// data direction register B
             THIS.DDRB = data;
             return;
         case 0x03:		// data direction register A
             THIS.DDRA = data;
-            _psgBus();
+            _ioPsgBus();
             return;
         case 0x04:		// Timer 1 counter low
             THIS.timer1l = data;
@@ -238,7 +261,7 @@ void io_write(BYTE addr, BYTE data) {
             THIS.timer1C = THIS.timer1L;
             THIS.IFR &= ~0x40;	// clear T1 interrupt
             THIS.timer1R = 1;
-            _doIrqVia();
+            _ioDoIrqVia();
             //__android_log_print(ANDROID_LOG_ERROR, "jni", "%04X T1L %06X T1C %06X", __pc, __timer1L, __timer1C);
             return;
         case 0x06:		// Timer 1 latch low
@@ -248,7 +271,7 @@ void io_write(BYTE addr, BYTE data) {
             THIS.timer1L = THIS.timer1l | (data << 8);
             if (THIS.tapeOp) {			// want to do something
                 if (THIS.tapeWrite) {		// write
-                    //// System.tape.writeBit(data << 8);
+                    tapeWriteBit(data << 8);
                 }
             }
             return;
@@ -259,7 +282,7 @@ void io_write(BYTE addr, BYTE data) {
             THIS.timer2L = THIS.timer2l | (data << 8);
             THIS.IFR &= ~0x20;	// clear T2 interrupt
             THIS.timer2R = 1;
-            _doIrqVia();
+            _ioDoIrqVia();
             if (THIS.tapeOp == 0) {	// no rom tape op, do the real timer
                 THIS.timer2C = THIS.timer2L;
             }
@@ -267,7 +290,7 @@ void io_write(BYTE addr, BYTE data) {
         case 0x0A:
             THIS.IFR &= ~0x04;						// reset SR interrupt flag
             THIS.SR = data;
-            _doIrqVia();
+            _ioDoIrqVia();
             return;
         case 0x0B:		// auxilliary control register
             THIS.ACR = data;
@@ -301,11 +324,11 @@ void io_write(BYTE addr, BYTE data) {
             } else if (THIS.cb2Control) {
                 // NSLog(@"cb2control %d", _cb2Control);
             }
-            _psgBus();
+            _ioPsgBus();
             return;
         case 0x0D:		// IFR Timer1 / Timer 2 / CB1 / CB2 / SR / CA1 / CA2
             THIS.IFR &= ((~data) & 0x7F);
-            _doIrqVia();
+            _ioDoIrqVia();
             return;
         case 0x0E:		// IER Timer1 / Timer 2 / CB1 / CB2 / SR / CA1 / CA2
             if (data & 0x80) {   // set
@@ -313,11 +336,11 @@ void io_write(BYTE addr, BYTE data) {
             } else {					// clear
                 THIS.IER &= ((~data) & 0x7F);
             }
-            _doIrqVia();
+            _ioDoIrqVia();
             return;
         case 0xF:
             THIS.ORA = data;
-            _psgBus();
+            _ioPsgBus();
             return;
         default:
             return;

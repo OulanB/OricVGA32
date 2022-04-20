@@ -74,8 +74,8 @@ typedef struct {
     DWORD   bufferLength;
 } YM2149;
 
-BYTE ym2149_write(BYTE data);
-void ym2149_doAudio();
-void ym2149_init(DWORD samplerate);
+BYTE ym2149Write(BYTE data);
+void ym2149DoAudio();
+void ym2149Init(DWORD samplerate);
 
 #endif

@@ -40,7 +40,7 @@ const static BYTE *__envShapes[] = {  __envShape0, // 0000
                                 __envShapeE, // 1110
                                 __envShape4};// 1111
 
-void ym2149_doAudio() { 
+void ym2149DoAudio() { 
     float dout = 0.0;
     BYTE rbit = 0;
     BYTE a = 0;
@@ -101,7 +101,7 @@ void ym2149_doAudio() {
 //    THIS.states[WRITE_INDEX] = THIS.bufferPtr; 
 }
 
-void ym2149_init(DWORD samplerate) {
+void ym2149Init(DWORD samplerate) {
     
     THIS.audioEnable = 1;
 
@@ -120,10 +120,10 @@ void ym2149_init(DWORD samplerate) {
 
 }
 
-BYTE ym2149_write(BYTE data) {
+BYTE ym2149Write(BYTE data) {
     THIS.regs[THIS.reg] = data;
     if (THIS.reg == 14) return 1;
-    if (THIS.audioEnable) ym2149_doAudio();
+    if (THIS.audioEnable) ym2149DoAudio();
     switch(THIS.reg) {
         case 1:
             THIS.regs[1] &= 0xF;

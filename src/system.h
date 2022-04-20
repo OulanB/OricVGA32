@@ -8,9 +8,9 @@
 #undef THIS
 #define THIS System
 
-void system_write(WORD addr, BYTE data){
+void systemWrite(WORD addr, BYTE data){
     if ((addr & 0xFF00) == 0x0300) {      // I/O
-        io_write((BYTE)(addr & ((THIS.ovlEnable) ? 0xFF : 0x0F)), data);
+        ioWrite((BYTE)(addr & ((THIS.ovlEnable) ? 0xFF : 0x0F)), data);
     } else if (addr < 0xC000) {
         THIS.ram[addr] = data;
     } else if (THIS.romDis) {
@@ -22,9 +22,9 @@ void system_write(WORD addr, BYTE data){
     }
 }
 
-BYTE system_read(WORD addr) {
+BYTE systemRead(WORD addr) {
     if ((addr & 0xFF00) == 0x0300) {
-        return io_read((BYTE)(addr & 0x00FF));
+        return ioRead((BYTE)(addr & 0x00FF));
     } else if (addr < 0xC000) {
         return THIS.ram[addr];
     } else {
@@ -44,7 +44,7 @@ BYTE system_read(WORD addr) {
     }    
 }
 
-BYTE system_peek(WORD addr) {
+BYTE systemPeek(WORD addr) {
     if ((addr & 0xFF00) == 0x0300) {
         return 0xFF;        // for IO
     } else if (addr < 0xC000) {
@@ -66,24 +66,33 @@ BYTE system_peek(WORD addr) {
     }    
 }
 
-WORD system_deek(WORD addr) {
-    return system_peek(addr) | (system_peek(addr+1) << 8);
+WORD systemDeek(WORD addr) {
+    return systemPeek(addr) | (systemPeek(addr+1) << 8);
 }
 
-void system_Init(BYTE atmos) {
-    THIS.atmos = 0;
+void systemTapeSpeed(BOOL quick) {
+    THIS.quickTape = quick;
+    if (THIS.quickTape) {
+        THIS.rom0 = (BYTE *) basic11bPData;  // atmos rom
+        THIS.rom1 = (BYTE *) basic11bPData;  // atmos rom
+    } else {
+        THIS.rom0 = (BYTE *) basic11bData;  // atmos rom
+        THIS.rom1 = (BYTE *) basic11bData;  // atmos rom
+    }
+}
+
+void systemInit(BYTE atmos, BOOL quickTape) {
+    THIS.atmos = atmos;
     THIS.romDis = 0;
     THIS.ovlEnable = 0;
-    THIS.rom0 = (BYTE *) basic11bData;
-    THIS.rom1 = (BYTE *) basic11bData;
-    THIS.ram = (BYTE *)malloc(65536);
-    for (DWORD i=0; i<65536; i++) {
-        THIS.ram[i] = 0; 
-    } 
-    m6502_reset();
-    ula_init();
+    systemTapeSpeed(quickTape);
+    THIS.ram = (BYTE *) malloc(65536);
+    memset(THIS.ram, 0, 65536);
+    m6502Reset();
+    ulaInit();
+    tapeInit();
 }
 
-void system_log(CHAR *str) {
+void systemLog(CHAR *str) {
     Serial.println(str);
 }

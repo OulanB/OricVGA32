@@ -2,7 +2,7 @@
  * Video for emulators
  */
 
-#define L320
+// #define L320
 #ifdef L320
 // 320*240 
 #define HFRONT          8
@@ -19,18 +19,18 @@
 #define VSYNCPOLARITY   1
 #else
 // 256*240
-#define HFRONT          8
-#define HSYNC           32
-#define HBACK           40
+#define HFRONT          12 // 8
+#define HSYNC           44 // 32
+#define HBACK           24 // 40
 #define HRES            256
-#define VFRONT          4
-#define VSYNC           8
-#define VBACK           6
+#define VFRONT          11 // 4
+#define VSYNC           2 // 8
+#define VBACK           31 // 6
 #define VRES            480
 #define VDIV            2
-#define PIXELCLOCK      12549000
+#define PIXELCLOCK      10573500 // 12549000
 #define HSYNCPOLARITY   1
-#define VSYNCPOLARITY   0
+#define VSYNCPOLARITY   1
 #endif
 
 #define BITCOUNT 8
