@@ -202,7 +202,6 @@ void m6502Reset() {
     THIS.V = 0;
     THIS.N = 0;
     ioReset();
-    ym2149Init(48000);
 }
 
 static inline void _addAcc(BYTE b) {		// add into acc
@@ -846,6 +845,6 @@ int m6502DoOps(SDWORD cycles) {
         THIS.cycles -= THIS.dcycles;
         System.Psg.cyclesA += THIS.dcycles;
     }
-    if (System.Psg.audioEnable) ym2149DoAudio();
+    if (System.Psg.audioEnable == 1) ym2149DoAudio();
     return opscount;
 }

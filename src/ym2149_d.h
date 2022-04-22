@@ -4,6 +4,13 @@
 
 #include "types.h"
 
+enum SoundGeneratorState {
+  Stop,             /**<  */
+  RequestToPlay,    /**<  */
+  Playing,          /**<  */
+  RequestToStop,    /**<  */
+};
+
 typedef struct {
     BYTE    reg;
     BYTE    regs[16];
@@ -11,8 +18,8 @@ typedef struct {
     WORD    tonePeriod0;                          // clock divided by 16 first
     WORD    tonePeriod1;                          // clock divided by 16 first
     WORD    tonePeriod2;                          // clock divided by 16 first
-    WORD    noisePeriod;                            // clock divided by 16 first
-    WORD    noiseLimit;                             // noise limit
+    BYTE    noisePeriod;                            // clock divided by 16 first
+    BYTE    noiseLimit;                             // noise limit
     WORD    channelsEnable;
     WORD    amplitude0;
     WORD    amplitude1;
@@ -23,9 +30,9 @@ typedef struct {
     
     BYTE    noiseCount;                             // counter for noise period
     BYTE    noiseLevel;                             // noise level
-    BOOL    noiseMute;
-    DWORD   rnd;                                    // for noise generation
-    BOOL    noiseNew;                               // new output on noise
+    // BOOL    noiseMute;
+    DWORD    rnd;                                   // for noise generation
+    // BOOL    noiseNew;                               // new output on noise
     
     BYTE    toneNew;                                // new output on tone channels
     WORD    toneCount0;                           // counter for square wave period
@@ -46,12 +53,12 @@ typedef struct {
     BYTE    toneMute0;
     BYTE    toneMute1;
     BYTE    toneMute2;
-    BOOL    noiseBit0;                            // noise mixer bit
-    BOOL    noiseBit1;                            // noise mixer bit
-    BOOL    noiseBit2;                            // noise mixer bit
-    BOOL    toneBit0;                             // tone mixer bit
-    BOOL    toneBit1;                             // tone mixer bit
-    BOOL    toneBit2;                             // tone mixer bit
+    BYTE    noiseBit0;                            // noise mixer bit
+    BYTE    noiseBit1;                            // noise mixer bit
+    BYTE    noiseBit2;                            // noise mixer bit
+    BYTE    toneBit0;                             // tone mixer bit
+    BYTE    toneBit1;                             // tone mixer bit
+    BYTE    toneBit2;                             // tone mixer bit
     WORD    envCount;                               // counter for envelope period
     BYTE    envPos;                                 // envelope position
     BYTE    *envTab;                                //  = __envShape0;
@@ -64,18 +71,33 @@ typedef struct {
     DWORD   audioCyclesA;
     DWORD   audioCyclesB;
     
-    BYTE    audioEnable;
+    BYTE    audioEnable;                        // 0 no 1 synchro 2 real-time
 
     DWORD   samplerate;
-    WORD    sharedBuffers;
-    DWORD   states[16*4];
+//    WORD    sharedBuffers;
+//    DWORD   states[16*4];
+    WORD   *buffer;
     // float   ringBuffer[48000];
-    float   bufferPtr;
-    DWORD   bufferLength;
+    int     bufferReadPtr;
+    int     bufferWritePtr;
+    int     bufferLength;
+
+    TaskHandle_t        m_waveGenTaskHandle;
+    uint16_t            *m_sampleBuffer;
+    int8_t              m_volume;
+    int            m_sampleRate;
+    bool                m_play;
+    SoundGeneratorState m_state;
+    SemaphoreHandle_t   m_mutex;
+
 } YM2149;
 
 BYTE ym2149Write(BYTE data);
 void ym2149DoAudio();
-void ym2149Init(DWORD samplerate);
+void ym2149Init(BYTE mode);
+
+int ym2149Delta();
+
+bool ym2149I2SPlay(bool value);
 
 #endif

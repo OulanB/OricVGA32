@@ -34,13 +34,13 @@
 const WORD __modeState[] = {100, 200, 300, 400};
 
 const char *__osdStatusTop[] = {
-    "Delete|spiFs|Mnt|maKdir|         |Quik|-",         // L R N D
+    "Delete|spiFs|Mnt|maKdir|         |Quik|-",         // D F M K Q
     "Disk:xxxxxxxxxxxxxxxxxxxxxxxxxxxx       ",
     "Cpu:                                    ",
     "Mem:                                    "
 };
 const char *__osdStatusBottom[] = {
-    "Save|Home|<-|->|End|Cut|neW|Ren|       -",         // S B P N E C
+    "Save|Home|<-|->|End|Cut|neW|Ren|        ",         // S E C W R
     "|Eject|Save|Load|                       ",
     "|Step|                                  ",
     "|Mem|                                   "

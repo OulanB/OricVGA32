@@ -28,7 +28,7 @@
 #define VBACK           31 // 6
 #define VRES            480
 #define VDIV            2
-#define PIXELCLOCK      10573500 // 12549000
+#define PIXELCLOCK      8803000 // 10573500 // 12549000
 #define HSYNCPOLARITY   1
 #define VSYNCPOLARITY   1
 #endif

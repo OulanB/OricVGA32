@@ -39,7 +39,7 @@ void periodic_timer_callback(void *arg) {
     // put your main code here, to run repeatedly:
     System.tPrev = esp_timer_get_time(); // xthal_get_ccount();
 
-    System.nSum += m6502DoOps(20000);
+    System.nSum += m6502DoOps(CPU_FREQ/CPU_SLOT_FREQ);
     if (System.Osd.display) {
         osdDisplay2((System.vSyncCount++ >> 5) & 1);
         osdTopDisplay2(0);
@@ -59,8 +59,17 @@ void periodic_timer_callback(void *arg) {
         kDoFSM(); 
     }
 
+    if (System.Psg.audioEnable == 1) {
+        if (!System.Psg.m_play) {
+            if (ym2149Delta() > 3*(SOUND_SAMPLE_BUFFER_SIZE)) { 
+                ym2149I2SPlay(true);
+                Serial.println("Sound started");
+            }
+        }
+    }
+
     if (System.tN == 200) {
-        // log_d("loop avg %d %d", tSum / tN, nSum / tN);
+        log_d("loop avg %d %d\n", System.tSum / System.tN, System.nSum / System.tN);
         System.tSum = 0;
         System.tN = 0;
         System.nSum = 0;
@@ -77,7 +86,7 @@ void taskCore1(void *parameters) {
     System.periodic_timer_args.name = "Per-Cpu";
     ESP_ERROR_CHECK(esp_timer_create(&System.periodic_timer_args, &System.periodic_timer));
     /* The timer has been created but is not running yet */
-    ESP_ERROR_CHECK(esp_timer_start_periodic(System.periodic_timer, 20000));    
+    ESP_ERROR_CHECK(esp_timer_start_periodic(System.periodic_timer, CPU_FREQ/CPU_SLOT_FREQ));    
     
     for( ;; ) {
         yield();
@@ -126,7 +135,8 @@ void setup() {
     log_d("Total PSRAM: %d", ESP.getPsramSize());
     log_d("Free PSRAM: %d", ESP.getFreePsram()); 
 
-    systemInit(1, 1);  // atmos quick read patch
+    systemInit(1, 1);   // atmos & quick read patch
+    ym2149Init(2);      // use real-time sound
 
     // tapeLoadSD("/Oric/tapes/Defense Force (19xx)(Tansoft).tap");
     // tapeLoadSPI("/Defense Force (19xx)(Tansoft).tap");
@@ -151,7 +161,7 @@ void loop() {
             osdFsm();
             delay(10);
         } else {
-            delay(100);
+            delay(200);
             yield();
         }
     }

@@ -18,6 +18,13 @@
 
 #include "file_d.h"
 
+#define CPU_SLOT_FREQ 50
+#define CPU_FREQ 1000000
+#define PSG_FREQ 62500
+#define SOUND_FREQ 24000
+#define SOUND_SLOT_FREQ 100
+#define SOUND_SAMPLE_BUFFER_SIZE (SOUND_FREQ/SOUND_SLOT_FREQ)
+
 typedef struct {
     M6502 Cpu;
     ULA Ula;
